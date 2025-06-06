@@ -1,0 +1,14 @@
+---
+BasedOnStyle: LLVM
+---
+Language: Cpp
+IndentWidth: 4
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: InlineOnly
+BreakBeforeBraces: Custom
+BraceWrapping:
+  BeforeElse: true
+  BeforeCatch: true
+---
+

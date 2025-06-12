@@ -78,6 +78,7 @@ class window : public window_context {
     std::unique_ptr<window_client> m_client;
     std::list<std::unique_ptr<window_watcher>> m_watchers;
     window_attrs m_attrs{};
+    window_size m_normal_size{};
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -55,6 +55,7 @@ void window::toggle_fullscreen() {
 
 void window::set_attrs(window_attrs attrs) {
     m_attrs = attrs;
+    m_normal_size = attrs.size;
     if (m_client) {
         m_client->reload_attrs();
     }
@@ -89,7 +90,7 @@ window_pos window::get_normal_pos() const noexcept {
 }
 
 window_size window::get_normal_size() const noexcept {
-    return m_attrs.size;
+    return m_normal_size;
 }
 
 window_mode window::get_default_mode() const noexcept {
@@ -97,6 +98,10 @@ window_mode window::get_default_mode() const noexcept {
 }
 
 void window::on_event(resize_event e) noexcept {
+    m_attrs.size = e.size;
+    if (m_attrs.mode != window_mode::fullscreen) {
+        m_normal_size = e.size;
+    }
     for (auto &w : m_watchers) {
         if (w->on_size) {
             w->on_size(*this, e);

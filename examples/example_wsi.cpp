@@ -15,26 +15,26 @@ int main() {
 
     // setup callbacks
 
-    wcb->on_size = [](auto &wnd, auto e) {
+    wcb->on_size = [](auto & /*wnd*/, auto e) {
         glViewport(0, 0, e.size.width, e.size.height);
     };
 
-    wcb->on_keyboard = [](auto &w, auto e) {
+    wcb->on_keyboard = [](auto &wnd, auto e) {
         using tue::wsi::key_code;
         if (e.pressed(key_code::escape)) {
-            w.close();
+            wnd.close();
         }
         else if (e.pressed(key_code::F)) {
-            w.toggle_fullscreen();
+            wnd.toggle_fullscreen();
         }
     };
 
-    wcb->on_draw = [](auto &wnd) {
+    wcb->on_draw = [](auto & /*wnd*/) {
         glClearColor(0.1, 0.1, 0.1, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
     };
 
-    wcb->on_mouse = [](auto &wnd, auto e) {
+    wcb->on_mouse = [](auto & /*wnd*/, auto e) {
         using tue::wsi::key_code;
         using tue::wsi::key_mods;
         if (e.holds(key_mods::alt) && e.pressed(key_code::mouse_left)) {

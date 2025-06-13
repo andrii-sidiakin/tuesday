@@ -15,14 +15,12 @@ class window_system_client;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-static tue::wsi::key_code key_code_from_glfw(int key) noexcept;
-static tue::wsi::key_action key_action_from_glfw(int action) noexcept;
-static tue::wsi::key_mods key_mods_from_glfw(int mods) noexcept;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 class window_client : public tue::wsi::window_client {
   public:
+    window_client(window_client &&other) noexcept;
+    window_client &operator=(window_client &&other) noexcept;
+    void swap(window_client &other) noexcept;
+
     explicit window_client(window_system_client &ws) noexcept;
 
     ~window_client();

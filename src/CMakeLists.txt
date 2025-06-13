@@ -103,6 +103,7 @@ target_include_directories(eye PUBLIC
 target_sources(eye PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/glfw.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/window.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shader.cpp"
 )
 
 target_link_libraries(eye

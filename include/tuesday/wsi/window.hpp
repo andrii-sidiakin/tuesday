@@ -39,6 +39,9 @@ class window_watcher {
 class window : public window_context {
   public:
     window() = default;
+    window(window &&other) noexcept;
+    window &operator=(window &&other) noexcept;
+    void swap(window &other) noexcept;
 
   public:
     void open();

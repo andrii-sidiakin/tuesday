@@ -13,6 +13,33 @@ window_watcher::~window_watcher() = default;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+window::window(window &&other) noexcept {
+    other.swap(*this);
+}
+
+window &window::operator=(window &&other) noexcept {
+    other.swap(*this);
+    return *this;
+}
+
+void window::swap(window &other) noexcept {
+    if (this == &other) {
+        return;
+    }
+
+    m_client = std::exchange(other.m_client, std::move(m_client));
+    if (m_client) {
+        m_client->set_context(this);
+    }
+    if (other.m_client) {
+        other.m_client->set_context(&other);
+    }
+
+    m_watchers = std::exchange(other.m_watchers, std::move(m_watchers));
+    m_attrs = std::exchange(other.m_attrs, m_attrs);
+    m_normal_size = std::exchange(other.m_normal_size, m_normal_size);
+}
+
 void window::open() {
     if (m_client) {
         m_client->open();
@@ -109,7 +136,7 @@ void window::on_event(resize_event e) noexcept {
     }
 }
 
-void window::on_event(redraw_event e) noexcept {
+void window::on_event(redraw_event /*e*/) noexcept {
     for (auto &w : m_watchers) {
         if (w->on_draw) {
             w->on_draw(*this);

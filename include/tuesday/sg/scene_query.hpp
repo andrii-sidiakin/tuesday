@@ -47,6 +47,8 @@ template <class Impl, class F, class Fs>
 struct do_exec_impl_for : virtual do_exec_for<Fs> {
     static_assert(std::is_class_v<Impl>, "Impl must be a class");
 
+    using do_exec_for<Fs>::do_exec;
+
     void do_exec(F f) final {
         static_cast<Impl *>(do_exec_for<void>::m_impl_ptr)->on_exec(f);
     }

@@ -6,8 +6,35 @@ namespace glfw {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+static tue::wsi::key_code key_code_from_glfw(int key) noexcept;
+static tue::wsi::key_action key_action_from_glfw(int action) noexcept;
+static tue::wsi::key_mods key_mods_from_glfw(int mods) noexcept;
+
+static void assign_handle_client(GLFWwindow *h, window_client *c) noexcept;
+static void erase_handle_client(GLFWwindow *h) noexcept;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 window_client::window_client(window_system_client &ws) noexcept
     : m_wndsys{&ws} {
+}
+
+window_client::window_client(window_client &&other) noexcept {
+    other.swap(*this);
+}
+
+window_client &window_client::operator=(window_client &&other) noexcept {
+    other.swap(*this);
+    return *this;
+}
+
+void window_client::swap(window_client &other) noexcept {
+    if (this != &other) {
+        m_wndsys = std::exchange(other.m_wndsys, nullptr);
+        m_handle = std::exchange(other.m_handle, nullptr);
+        assign_handle_client(m_handle, this);
+        assign_handle_client(other.m_handle, &other);
+    }
 }
 
 window_client::~window_client() {
@@ -73,6 +100,20 @@ static client_map_t &client_map() noexcept {
     return map;
 }
 
+static void assign_handle_client(GLFWwindow *h, window_client *c) noexcept {
+    if (h == nullptr) {
+        return;
+    }
+
+    auto &map = client_map();
+    auto iter = map.find(h);
+    map.insert_or_assign(iter, h, c);
+}
+
+static void erase_handle_client(GLFWwindow *h) noexcept {
+    client_map().erase(h);
+}
+
 static window_client *find_client(GLFWwindow *h) noexcept {
     auto iter = client_map().find(h);
     return iter == client_map().end() ? nullptr : iter->second;
@@ -127,14 +168,14 @@ void window_system_client::create_handle(window_client &wc) {
         glfwDestroyWindow(old);
     }
 
-    client_map().insert_or_assign(h, &wc);
+    assign_handle_client(h, &wc);
 
     glfwShowWindow(h);
 }
 void window_system_client::destroy_handle(window_client &wc) {
     if (GLFWwindow *old = wc.set_native_handle(nullptr)) {
         glfwDestroyWindow(old);
-        client_map().erase(old);
+        erase_handle_client(old);
     }
 }
 

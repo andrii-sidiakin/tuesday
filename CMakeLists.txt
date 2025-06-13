@@ -28,11 +28,7 @@ add_subdirectory(src)
 
 ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-add_executable(example_wsi examples/example_wsi.cpp)
-target_link_libraries(example_wsi PRIVATE Tuesday::tuesday Tuesday::eye)
-
-add_executable(example_sg examples/example_sg.cpp)
-target_link_libraries(example_sg PRIVATE Tuesday::tuesday Tuesday::eye)
+add_subdirectory(examples)
 
 ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

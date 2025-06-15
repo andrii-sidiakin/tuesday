@@ -11,13 +11,12 @@ template <class Fs, class Cs> class basic_scene_node;
 
 ///
 ///
-template <class... Fs, class... Cs>
-class basic_scene_node<mp::tseq<Fs...>, mp::tseq<Cs...>> {
+template <class... Fs, class Cs> class basic_scene_node<mp::tseq<Fs...>, Cs> {
   public:
-    using object = basic_object<mp::tseq<Fs...>, mp::tseq<Cs...>>;
+    using object = basic_object<mp::tseq<Fs...>, Cs>;
 
     template <typename T>
-    using object_impl = basic_object_impl<T, mp::tseq<Fs...>, mp::tseq<Cs...>>;
+    using object_impl = basic_object_impl<T, mp::tseq<Fs...>, Cs>;
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

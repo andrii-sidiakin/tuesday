@@ -1,6 +1,7 @@
 #include "glfw.hpp"
 
 #include <map>
+#include <print>
 
 namespace glfw {
 
@@ -128,6 +129,7 @@ static tue::wsi::window_context *find_client_context(GLFWwindow *h) noexcept {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+static void cb_error(int code, const char *what);
 static void cb_refresh(GLFWwindow *h);
 static void cb_fbsize(GLFWwindow *h, int width, int height);
 static void cb_key(GLFWwindow *h, int key, int scancode, int action, int mods);
@@ -180,6 +182,10 @@ void window_system_client::destroy_handle(window_client &wc) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+static void cb_error(int code, const char *what) {
+    std::println(stderr, "[glfw] error[{}]: {}", code, what);
+}
 
 static void cb_refresh(GLFWwindow *h) {
     if (auto *ctx = find_client_context(h)) {

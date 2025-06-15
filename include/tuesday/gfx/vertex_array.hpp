@@ -138,6 +138,12 @@ inline void bind_attrib(vertex_array vao, GLuint binding_index,
 }
 
 inline void bind_attrib(vertex_array vao, GLuint binding_index,
+                        vertex_attrib_format fmt, GLuint divisor) {
+    bind_attrib(vao, binding_index, fmt);
+    glVertexArrayBindingDivisor(vao.id, binding_index, divisor);
+}
+
+inline void bind_attrib(vertex_array vao, GLuint binding_index,
                         std::span<const vertex_attrib_format> fmt) {
     for (auto elem : fmt) {
         bind_attrib(vao, binding_index, elem);

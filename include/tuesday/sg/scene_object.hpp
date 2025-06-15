@@ -65,11 +65,15 @@ struct object_base {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+template <class Cs>
+class basic_object<mp::tseq<>, Cs> : private details::object_base {
+    static_assert(false, "At least one feature expected");
+};
+
 ///
 ///
-template <class E, class... Fs, class... Cs>
-class basic_object<mp::tseq<E, Fs...>, mp::tseq<Cs...>>
-    : private details::object_base, public E {
+template <class E, class... Fs, class Cs>
+class basic_object<mp::tseq<E, Fs...>, Cs> : private details::object_base {
   protected:
     using context_fseq = mp::tseq<Fs...>;
     using feature_ptr = std::variant<Fs *...>;
@@ -94,8 +98,12 @@ class basic_object<mp::tseq<E, Fs...>, mp::tseq<Cs...>>
     virtual void query(feature_query &q) = 0;
 
     ///
+    virtual void visit(Cs &c) = 0;
+
+    ///
     virtual void set_feature_ptr(feature_ptr fp) = 0;
 
+    ///
     template <class Cmd> constexpr void apply(Cmd &&cmd) {
         feature_query_cmd<Cmd> q{std::forward<Cmd>(cmd)};
         query(q);
@@ -126,11 +134,11 @@ template <class... Fs> struct feature_ptr_tuple<mp::tseq<Fs...>> {
 ///
 /// basic_object implementation for type T
 ///
-template <typename T, class... Fs, class... Cs>
-class basic_object_impl<T, mp::tseq<Fs...>, mp::tseq<Cs...>> final
-    : public basic_object<mp::tseq<Fs...>, mp::tseq<Cs...>> {
+template <typename T, class... Fs, class Cs>
+class basic_object_impl<T, mp::tseq<Fs...>, Cs> final
+    : public basic_object<mp::tseq<Fs...>, Cs> {
   private:
-    using base_type = basic_object<mp::tseq<Fs...>, mp::tseq<Cs...>>;
+    using base_type = basic_object<mp::tseq<Fs...>, Cs>;
 
     template <class F>
     using feature_query_arg = base_type::template feature_query_arg<F>;
@@ -172,20 +180,32 @@ class basic_object_impl<T, mp::tseq<Fs...>, mp::tseq<Cs...>> final
         : m_value{std::move(value)} {}
 
   private:
-    constexpr void exec_query(feature_query & /*q*/,
-                              mp::tseq<> /*unused*/) noexcept {}
-
-    template <class G, class... Gs>
-    constexpr void exec_query(feature_query &q, mp::tseq<G, Gs...> /*unused*/) {
-        if constexpr (context_fseq::has(mp::meta_for<G>)) {
-            q.exec(
-                feature_query_arg<G>(this, get_feature_ptr(mp::meta_for<G>)));
-        }
-        exec_query(q, mp::tseq<Gs...>{});
+    constexpr void query(feature_query &q) override {
+        auto call_seq = [obj = *this]<class G, class... Gs>(
+                            this auto &self, feature_query &q,
+                            mp::tseq<G, Gs...>) {
+            if constexpr (context_fseq::has(mp::meta_for<G>)) {
+                q.exec(feature_query_arg<G>(
+                    &obj, obj.get_feature_ptr(mp::meta_for<G>)));
+            }
+            if constexpr (sizeof...(Gs)) {
+                self(q, mp::tseq<Gs...>{});
+            }
+        };
+        call_seq(q, object_fseq{});
     }
 
-    constexpr void query(feature_query &q) override {
-        exec_query(q, object_fseq{});
+    constexpr void visit(Cs &c) override {
+        auto call_seq = [&obj = *this]<class G, class... Gs>(
+                            this auto &self, Cs &c, mp::tseq<G, Gs...>) {
+            if constexpr (object_fseq::has(mp::meta_for<G>)) {
+                c.exec(obj, obj.get_feature_ptr(mp::meta_for<G>), obj.m_value);
+            }
+            if constexpr (sizeof...(Gs)) {
+                self(c, mp::tseq<Gs...>{});
+            }
+        };
+        call_seq(c, object_fseq{});
     }
 
   private:
@@ -200,7 +220,7 @@ class basic_object_impl<T, mp::tseq<Fs...>, mp::tseq<Cs...>> final
     }
 
     template <class F>
-    auto *get_feature_ptr(this auto &&self, mp::meta<F> mt = {}) noexcept {
+    auto *get_feature_ptr(this auto &self, mp::meta<F> mt = {}) noexcept {
         if constexpr (object_fseq::has(mt)) {
             return std::get<F *>(self.m_fptrs.tup);
         }

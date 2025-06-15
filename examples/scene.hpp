@@ -1,70 +1,20 @@
 #pragma once
 
-#include "helpers.hpp"
+#include "render_context.hpp"
 
 #include <glad/gl.h>
 #include <type_traits>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-struct draw_context {
-    float width{0};
-    float height{0};
-    float aspect_ratio{0};
-
-    glm::mat4 mat_p{1};
-    glm::mat4 mat_v{1};
-    glm::mat4 mat_m{1};
-
-    tue::gfx::shader_program m_shader;
-    tue::gfx::vertex_array m_vao;
-
-    void set_viewport(int width_, int height_) {
-        if (tue_assert(width_ > 0 && height_ > 0)) {
-            width = width_;
-            height = height_;
-            aspect_ratio = width / height;
-            glViewport(0, 0, width_, height_);
-        }
-        else {
-            width = height = aspect_ratio = 0;
-        }
-    }
-
-    void use(tue::gfx::shader_program shader) {
-        if (m_shader.id != shader.id) {
-            glUseProgram(shader.id);
-            m_shader = shader;
-        }
-
-        glUniformMatrix4fv(find_uniform(shader, "MatP"), 1, GL_FALSE,
-                           glm::value_ptr(mat_p));
-        glUniformMatrix4fv(find_uniform(shader, "MatV"), 1, GL_FALSE,
-                           glm::value_ptr(mat_v));
-        glUniformMatrix4fv(find_uniform(shader, "MatM"), 1, GL_FALSE,
-                           glm::value_ptr(mat_m));
-    }
-
-    void use(tue::gfx::vertex_array vao) {
-        if (vao.id != m_vao.id) {
-            glBindVertexArray(vao.id);
-            m_vao = vao;
-        }
-    }
-
-    void draw(tue::gfx::vertex_buffer vbo, GLenum mode) {
-        glDrawArrays(mode, 0, vbo.count);
-    }
-};
-
 struct drawable {
     virtual ~drawable() = default;
-    virtual void init(draw_context &) = 0;
-    virtual void draw(draw_context &) = 0;
+    virtual void init(tue::gfx::draw_context &) = 0;
+    virtual void draw(tue::gfx::draw_context &) = 0;
     virtual void update([[maybe_unused]] float dt) {}
 
-    friend void tue_init(draw_context &c, drawable &o) { o.init(c); }
-    friend void tue_draw(draw_context &c, drawable &o) { o.draw(c); }
+    friend void tue_init(tue::gfx::draw_context &c, drawable &o) { o.init(c); }
+    friend void tue_draw(tue::gfx::draw_context &c, drawable &o) { o.draw(c); }
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -95,8 +45,8 @@ struct collidable {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 struct drawable_noop : drawable {
-    void init(draw_context & /*unused*/) noexcept final {}
-    void draw(draw_context & /*unused*/) noexcept final {}
+    void init(tue::gfx::draw_context & /*unused*/) noexcept final {}
+    void draw(tue::gfx::draw_context & /*unused*/) noexcept final {}
 };
 
 struct syncable_noop : syncable {
@@ -137,8 +87,12 @@ class scene_object {
         model_impl(model_impl &&) noexcept = default;
         model_impl &operator=(model_impl &&) noexcept = default;
 
-        void init(draw_context &ctx) override { tue::gfx::init(ctx, data); }
-        void draw(draw_context &ctx) override { tue::gfx::draw(ctx, data); }
+        void init(tue::gfx::draw_context &ctx) override {
+            tue::gfx::init(ctx, data);
+        }
+        void draw(tue::gfx::draw_context &ctx) override {
+            tue::gfx::draw(ctx, data);
+        }
 
         void init(sync_context &ctx) override { tue::gfx::init(ctx, data); }
         void sync(sync_context &ctx) override { tue::gfx::sync(ctx, data); }
@@ -152,8 +106,12 @@ class scene_object {
         model_impl(model_impl &&) noexcept = default;
         model_impl &operator=(model_impl &&) noexcept = default;
 
-        void init(draw_context &ctx) override { tue::gfx::init(ctx, data_ref); }
-        void draw(draw_context &ctx) override { tue::gfx::draw(ctx, data_ref); }
+        void init(tue::gfx::draw_context &ctx) override {
+            tue::gfx::init(ctx, data_ref);
+        }
+        void draw(tue::gfx::draw_context &ctx) override {
+            tue::gfx::draw(ctx, data_ref);
+        }
 
         void init(sync_context &ctx) override { tue::gfx::init(ctx, data_ref); }
         void sync(sync_context &ctx) override { tue::gfx::sync(ctx, data_ref); }
@@ -164,12 +122,12 @@ class scene_object {
     explicit scene_object(T &&obj)
         : m_model{std::make_unique<model_impl<T>>(std::forward<T>(obj))} {}
 
-    void init(draw_context &ctx) {
+    void init(tue::gfx::draw_context &ctx) {
         if (m_model) {
             m_model->init(ctx);
         }
     }
-    void draw(draw_context &ctx) {
+    void draw(tue::gfx::draw_context &ctx) {
         if (m_model) {
             m_model->draw(ctx);
         }
@@ -230,7 +188,7 @@ class scene_root {
     }
 
   private:
-    draw_context m_draw_ctx;
+    tue::gfx::draw_context m_draw_ctx;
     sync_context m_sync_ctx;
     std::vector<scene_object> m_objs;
 };
@@ -241,13 +199,13 @@ struct clear_scene {
     GLfloat clear_color[4] = {0, 0, 0.1, 1};
     GLbitfield clear_bits = {GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT};
 
-    friend constexpr void tue_init([[maybe_unused]] draw_context &ctx,
+    friend constexpr void tue_init([[maybe_unused]] tue::gfx::draw_context &ctx,
                                    clear_scene o) noexcept {
         glClearColor(o.clear_color[0], o.clear_color[1], o.clear_color[2],
                      o.clear_color[3]);
     }
 
-    friend constexpr void tue_draw([[maybe_unused]] draw_context &ctx,
+    friend constexpr void tue_draw([[maybe_unused]] tue::gfx::draw_context &ctx,
                                    clear_scene o) noexcept {
         glClear(o.clear_bits);
     }
@@ -270,7 +228,7 @@ struct camera {
     float near{0.1};
     float far{1000};
 
-    friend constexpr void tue_init([[maybe_unused]] draw_context &ctx,
+    friend constexpr void tue_init([[maybe_unused]] tue::gfx::draw_context &ctx,
                                    camera &o) noexcept {
         o.pos = glm::vec3{0, 3, -10};
         o.at = glm::vec3{0, 0, 1};
@@ -280,7 +238,8 @@ struct camera {
         o.far = 1000;
     }
 
-    friend constexpr void tue_draw(draw_context &ctx, camera &o) noexcept {
+    friend constexpr void tue_draw(tue::gfx::draw_context &ctx,
+                                   camera &o) noexcept {
         if (!tue_assert(ctx.aspect_ratio > 0)) {
             return;
         }

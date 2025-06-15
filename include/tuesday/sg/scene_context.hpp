@@ -66,10 +66,11 @@ template <class Fs, class Cs> class basic_scene_context;
 
 ///
 ///
-template <class... Fs, class... Cs>
-class basic_scene_context<mp::tseq<Fs...>, mp::tseq<Cs...>> {
+template <class... Fs, class Cs>
+class basic_scene_context<mp::tseq<Fs...>, Cs> {
   public:
-    using object = basic_object<mp::tseq<Fs...>, mp::tseq<Cs...>>;
+    using feature_tseq = mp::tseq<Fs...>;
+    using object = basic_object<feature_tseq, Cs>;
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

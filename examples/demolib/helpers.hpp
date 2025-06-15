@@ -128,18 +128,18 @@ template <> struct tue::gfx::vertex_attrib_format_fn<glm::vec3> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-constexpr auto cube_vertices(float r, glm::vec3 c = glm::vec3{0}) noexcept {
+constexpr auto cube_vertices(float r) noexcept {
     return std::array{
         // front
-        glm::vec3{c + glm::vec3{-r, -r, +r}},
-        glm::vec3{c + glm::vec3{+r, -r, +r}},
-        glm::vec3{c + glm::vec3{+r, +r, +r}},
-        glm::vec3{c + glm::vec3{-r, +r, +r}},
+        glm::vec3{-r, -r, +r},
+        glm::vec3{+r, -r, +r},
+        glm::vec3{+r, +r, +r},
+        glm::vec3{-r, +r, +r},
         // back
-        glm::vec3{c + glm::vec3{+r, -r, -r}},
-        glm::vec3{c + glm::vec3{-r, -r, -r}},
-        glm::vec3{c + glm::vec3{-r, +r, -r}},
-        glm::vec3{c + glm::vec3{+r, +r, -r}},
+        glm::vec3{+r, -r, -r},
+        glm::vec3{-r, -r, -r},
+        glm::vec3{-r, +r, -r},
+        glm::vec3{+r, +r, -r},
     };
 }
 
@@ -156,10 +156,10 @@ constexpr auto cube_indices() noexcept {
 
 constexpr auto cube_mesh(float r, glm::vec3 c = glm::vec3{0}) noexcept {
     const auto is = cube_indices();
-    const auto vs = cube_vertices(r, c);
+    const auto vs = cube_vertices(r);
     std::array<glm::vec3, is.size()> m;
     for (auto i{0U}; i < is.size(); ++i) {
-        m[i] = vs[is[i]];
+        m[i] = c + vs[is[i]];
     }
     return m;
 }

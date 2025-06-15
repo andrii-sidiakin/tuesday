@@ -31,7 +31,7 @@ struct particle_system {
         std::vector<glm::vec3> pos;
         std::vector<glm::u8vec3> clr;
 
-        tue::gfx::vertex_buffer vbo{};
+        // tue::gfx::vertex_buffer vbo{};
         attr_data attrs[2];
 
         void reset(std::size_t count) {
@@ -77,7 +77,7 @@ struct particle_system {
         delete_shader(shader);
     }
 
-    void init([[maybe_unused]] draw_context &ctx) {
+    void init([[maybe_unused]] tue::gfx::draw_context &ctx) {
         data.reset(part_count);
 
         for (size_t i{0}; i < part_count; ++i) {
@@ -109,7 +109,7 @@ struct particle_system {
         shader = tue::gfx::make_shader(vert_source_inst, frag_source);
     }
 
-    void draw(draw_context &ctx) {
+    void draw(tue::gfx::draw_context &ctx) {
         ctx.use(shader);
         ctx.use(vao);
 
@@ -143,9 +143,13 @@ struct particle_system {
         }
     }
 
-    friend void tue_init(draw_context &ctx, particle_system &o) { o.init(ctx); }
+    friend void tue_init(tue::gfx::draw_context &ctx, particle_system &o) {
+        o.init(ctx);
+    }
 
-    friend void tue_draw(draw_context &ctx, particle_system &o) { o.draw(ctx); }
+    friend void tue_draw(tue::gfx::draw_context &ctx, particle_system &o) {
+        o.draw(ctx);
+    }
 
     friend void tue_init([[maybe_unused]] sync_context &ctx,
                          [[maybe_unused]] particle_system &o) {}

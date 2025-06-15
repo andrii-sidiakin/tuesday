@@ -43,6 +43,20 @@ template <std::signed_integral T, T... Is> struct iseq {};
 /// sequence of unsigned integrals
 template <std::unsigned_integral T, T... Us> struct useq {};
 
+template <std::unsigned_integral T, T N> consteval auto make_useq() noexcept {
+    return []<T... Vs>(this auto &self, useq<T, Vs...>) {
+        if constexpr (sizeof...(Vs) < N) {
+            return self(useq<T, Vs..., sizeof...(Vs)>{});
+        }
+        else {
+            return useq<T, Vs...>{};
+        }
+    }(useq<T>{});
+}
+
+template <std::unsigned_integral T, T N>
+constexpr auto useq_for = make_useq<T, N>();
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// sequence of types

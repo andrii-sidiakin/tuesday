@@ -22,7 +22,7 @@ struct unique_op {
         using type = std::conditional_t<
             (... or std::same_as<A, Bs>), // already present?
             typename impl<tseq<As...>, tseq<Bs...>>::type,
-            typename impl<tseq<As...>, tseq<A, Bs...>>::type>;
+            typename impl<tseq<As...>, tseq<Bs..., A>>::type>;
     };
 
     template <typename... As>

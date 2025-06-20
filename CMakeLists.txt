@@ -3,6 +3,11 @@ project(Tuesday VERSION 0.0.0)
 
 ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+option(TUE_BUILD_TESTS "Build tests" YES)
+option(TUE_BUILD_EXAMPLES "Build examples" YES)
+
+## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -32,7 +37,16 @@ add_subdirectory(src)
 
 ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-add_subdirectory(examples)
+if(TUE_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+if(TUE_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 
 ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

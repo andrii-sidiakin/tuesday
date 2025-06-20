@@ -11,7 +11,7 @@ add_library(tuesday INTERFACE)
 add_library(Tuesday::tuesday ALIAS tuesday)
 
 target_compile_features(tuesday INTERFACE
-    cxx_std_26
+    cxx_std_23
 )
 
 target_compile_options(tuesday INTERFACE

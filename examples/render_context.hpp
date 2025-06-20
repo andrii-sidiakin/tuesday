@@ -4,7 +4,7 @@
 
 namespace tue::gfx {
 
-struct draw_context {
+struct render_context {
     float width{0};
     float height{0};
     float aspect_ratio{0};
@@ -52,16 +52,6 @@ struct draw_context {
     void draw(tue::gfx::vertex_buffer vbo, GLenum mode) {
         glDrawArrays(mode, 0, vbo.count);
     }
-};
-
-struct default_camera {
-    glm::vec3 pos{0, 0, -1};
-    glm::vec3 at{0};
-    glm::vec3 up{0, 1, 0};
-
-    float fov{60.};
-    float near{0.1};
-    float far{1000};
 };
 
 } // namespace tue::gfx

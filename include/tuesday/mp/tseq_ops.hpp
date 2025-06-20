@@ -20,13 +20,13 @@ struct unique_op {
     template <class A, class... As, class... Bs>
     struct impl<tseq<A, As...>, tseq<Bs...>> {
         using type = std::conditional_t<
-            (... or std::same_as<A, Bs>), // already present?
-            typename impl<tseq<As...>, tseq<Bs...>>::type,
-            typename impl<tseq<As...>, tseq<Bs..., A>>::type>;
+            (... or std::same_as<A, Bs>),                  // already present?
+            typename impl<tseq<As...>, tseq<Bs...>>::type, // skip
+            typename impl<tseq<As...>, tseq<Bs..., A>>::type>; // append
     };
 
     template <typename... As>
-    consteval auto operator()(tseq<As...> a) const noexcept {
+    consteval auto operator()(tseq<As...> /*a*/) const noexcept {
         return typename impl<tseq<As...>, tseq<>>::type{};
     }
 };
@@ -39,46 +39,50 @@ inline constexpr unique_op unique{};
 /// concatenates given sequences into a single one preserving the order
 struct concat_op {
 
-    template <typename... As, typename... Bs>
-    consteval auto operator()(tseq<As...> /*a*/,
-                              tseq<Bs...> /*b*/) const noexcept {
-        return tseq<As..., Bs...>{};
+    template <typename... As>
+    consteval auto operator()(tseq<As...> a) const noexcept {
+        return a;
     }
 
-    template <typename... As, typename B>
-    consteval auto operator()(tseq<As...> /*a*/, B /*b*/) const noexcept {
-        return tseq<As..., B>{};
+    template <typename... As, typename... Bs, typename... Cs>
+    consteval auto operator()(tseq<As...> a, tseq<Bs...> b,
+                              Cs... cs) const noexcept {
+        if constexpr (sizeof...(Cs) == 0) {
+            return tseq<As..., Bs...>{};
+        }
+        else {
+            return concat_op{}(a, concat_op{}(b, cs...));
+        }
     }
 };
 
 inline constexpr concat_op concat{};
 
-template <typename... As, typename B>
-consteval auto operator+(tseq<As...> a, B b) noexcept {
-    return concat(a, b);
-}
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// tuesday.mp.tseq.join
+// tuesday.mp.tseq.join_unique
 
-struct join_op {
+///
+struct join_unique_op {
 
     template <typename... As, typename... Bs>
-    consteval auto operator()(tseq<As...> a, tseq<Bs...> b) const noexcept {
-        return unique(concat(a, b));
-    }
-
-    template <typename... As, typename B>
-    consteval auto operator()(tseq<As...> a, B b) const noexcept {
-        return unique(concat(a, b));
+    consteval auto operator()(tseq<As...> a, Bs... bs) const noexcept {
+        return unique(concat(a, bs...));
     }
 };
 
-inline constexpr join_op join{};
+inline constexpr join_unique_op join_unique{};
 
-template <typename... As, typename B>
-consteval auto operator|(tseq<As...> a, B b) noexcept {
-    return join(a, b);
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//
+
+template <typename... As, typename... Bs>
+consteval auto operator+(tseq<As...> a, tseq<Bs...> b) noexcept {
+    return concat(a, b);
+}
+
+template <typename... As, typename... Bs>
+consteval auto operator|(tseq<As...> a, tseq<Bs...> b) noexcept {
+    return join_unique(a, b);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

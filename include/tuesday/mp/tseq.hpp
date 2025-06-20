@@ -8,7 +8,7 @@ namespace tue::mp {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // tuesday.mp.tseq
 
-/// 
+///
 /// sequence of types
 ///
 template <typename... Ts> struct tseq {
@@ -21,8 +21,17 @@ template <typename... Ts> struct tseq {
     static consteval bool has(meta<T> m = meta_for<T>) noexcept {
         return (... or (m == meta_for<Ts>));
     }
-};
 
+    template <class... Us>
+    friend consteval bool operator==(tseq<Ts...> /*lhs*/, tseq<Us...> /*rhs*/) {
+        return sizeof...(Ts) == sizeof...(Us) && (... and std::same_as<Ts, Us>);
+    }
+
+    template <class... Us>
+    friend consteval bool operator!=(tseq<Ts...> lhs, tseq<Us...> rhs) {
+        return !(lhs == rhs);
+    }
+};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

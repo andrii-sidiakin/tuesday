@@ -24,9 +24,13 @@ template <typename T> struct meta {
     explicit(false) consteval meta(U && /*unused*/) noexcept {}
 
     template <typename U>
-    consteval friend bool operator==(meta<T> /*lhs*/,
-                                     meta<U> /*rhs*/) noexcept {
+    consteval friend bool operator==(meta<T> /*lhs*/, meta<U> /*rhs*/) {
         return std::same_as<T, U>;
+    }
+
+    template <typename U>
+    consteval friend bool operator!=(meta<T> lhs, meta<U> rhs) {
+        return !(lhs == rhs);
     }
 };
 

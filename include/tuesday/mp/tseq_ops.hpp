@@ -33,6 +33,10 @@ struct unique_op {
 
 inline constexpr unique_op unique{};
 
+template <typename... Ts> consteval bool is_unique(tseq<Ts...> ts) noexcept {
+    return std::same_as<tseq<Ts...>, decltype(unique(ts))>;
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // tuesday.mp.tseq.concat
 

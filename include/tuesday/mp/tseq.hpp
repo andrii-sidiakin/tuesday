@@ -3,6 +3,8 @@
 
 #include <tuesday/mp/meta.hpp>
 
+#include <array>
+
 namespace tue::mp {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -21,6 +23,8 @@ template <typename... Ts> struct tseq {
     static consteval bool has(meta<T> m = meta_for<T>) noexcept {
         return (... or (m == meta_for<Ts>));
     }
+
+    static consteval auto make_index() { return std::array{meta_index<Ts>...}; }
 
     template <class... Us>
     friend consteval bool operator==(tseq<Ts...> /*lhs*/, tseq<Us...> /*rhs*/) {

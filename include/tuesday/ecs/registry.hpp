@@ -27,10 +27,7 @@ class entity_registry : public registry_base<Entity> {
     using entity_type = Entity;
     using state_type = State;
 
-    using component_base_ptr = std::unique_ptr<component_storage_base<Entity>>;
-    template <class S> using component_array = component_storage<Entity, S>;
-
-    using system_base_ptr = std::unique_ptr<system_base<Entity>>;
+    template <class S> using component = component_storage<Entity, S>;
 
   public:
     constexpr entity_registry() = default;
@@ -38,17 +35,16 @@ class entity_registry : public registry_base<Entity> {
     constexpr entity_registry &operator=(entity_registry &&) noexcept = default;
 
   public:
-    template <class C>
-    constexpr component_array<C> *find_component() const noexcept {
+    template <class C> constexpr component<C> *find_component() const noexcept {
         return m_components.template find<C>();
     }
 
     template <class C, typename... Args>
-    component_array<C> &make_component(Args &&...args) {
+    component<C> &make_component(Args &&...args) {
         return m_components.template make<C>(std::forward<Args>(args)...);
     }
 
-    template <class C> component_array<C> &use_component() {
+    template <class C> component<C> &use_component() {
         return m_components.template use<C>();
     }
 
@@ -95,9 +91,6 @@ class entity_registry : public registry_base<Entity> {
             m_systems.erase(e, state);
         }
     }
-
-  public:
-    //
 
   private:
     std::map<entity_type, state_type> m_entities;

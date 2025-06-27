@@ -36,3 +36,4 @@ endfunction()
 tue_add_simple_test(tseq GROUP mp)
 
 tue_add_simple_test(entity GROUP ecs)
+tue_add_simple_test(assoc_vector GROUP ecs)

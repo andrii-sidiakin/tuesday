@@ -3,8 +3,10 @@
 
 #include <tuesday/ecs.hpp>
 
+#include <algorithm>
 #include <bitset>
 #include <cstdint>
+#include <ranges>
 
 #include <print>
 
@@ -65,9 +67,18 @@ struct Entity {
 
     static constexpr Entity make() noexcept {
         static std::uint32_t id{0};
+        std::println("making={}", id + 1);
         return Entity{++id};
     }
 };
+
+#ifdef USE_ASSOC_VECTOR
+template <> struct std::hash<Entity> {
+    auto operator()(const Entity &e) const noexcept {
+        return std::hash<decltype(Entity::id)>{}(e.id);
+    }
+};
+#endif
 
 struct EntityTraits {
     using bitset_type = std::bitset<ComponentSet::size()>;
@@ -122,8 +133,9 @@ struct PhysicsSystem : public tue::ecs::basic_system<PhysicsSystem, Entity> {
         auto &x = m_reg.use_component<Position>();
         auto &v = m_reg.use_component<Velocity>();
 
-        std::println("update: {}", entities().size());
+        std::println("physics: {}", entities().size());
         for (auto e : entities()) {
+            std::println("e={}", e.id);
             x[e] = x[e] + v[e] * dt;
         }
     }
@@ -137,23 +149,36 @@ int main() {
     tue::ecs::entity_registry<Entity, EntityTraits> reg;
 
     reg.make_component<Mass>();
-    auto &pos = reg.make_component<Position>();
+    reg.make_component<Position>();
     reg.make_component<Velocity>();
 
     auto &physics = reg.make_system<PhysicsSystem>(reg);
 
     reg.insert(Entity::make());
-    reg.insert(Entity::make(), Mass{}, Position{});
+    reg.insert(Entity::make(), Mass{20}, Position{});
 
     auto e = Entity::make();
     reg.insert(e, Position{}, Velocity{});
 
-    reg.insert(Entity::make(), Velocity{}, Position{}, Mass{});
-    reg.insert(Entity::make(), Mass{}, Position{}, Velocity{});
-    reg.insert(Entity::make(), Mass{}, Position{}, AAExtent{});
+    reg.insert(Entity::make(), Velocity{}, Position{}, Mass{40});
+    reg.insert(Entity::make(), Mass{50}, Position{}, Velocity{});
+    reg.insert(Entity::make(), Mass{60}, Position{}, AAExtent{});
 
     physics.update({1});
 
+    using Movable = tue::mp::tseq<Position, Velocity>;
+    static constexpr auto MovableTraits = EntityTraits::make(Movable{});
+
+    std::ranges::for_each(reg.entities() |
+                              std::ranges::views::filter([](const auto &pair) {
+                                  return MovableTraits.match(pair.second);
+                              }),
+                          [](const auto &pair) {
+                              std::println("Movable: {} - {}", pair.first.id,
+                                           pair.second.bits.to_string());
+                          });
+
+    std::println("erase={}", e.id);
     reg.erase(e);
     physics.update({1});
 

@@ -1,6 +1,8 @@
 #ifndef _TUE_ECS_COMPONENT_HPP_INCLUDED_
 #define _TUE_ECS_COMPONENT_HPP_INCLUDED_
 
+#include <tuesday/ecs/assoc_vector.hpp>
+
 #include <tuesday/mp/tseq.hpp>
 #include <tuesday/mp/tseq_ops.hpp>
 
@@ -8,6 +10,8 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+
+#define USE_ASSOC_VECTOR
 
 namespace tue::ecs {
 
@@ -22,7 +26,11 @@ namespace tue::ecs {
 template <class E> class component_storage_base {
   public:
     virtual ~component_storage_base() = default;
-    virtual void erase(E) = 0;
+
+    void erase(E e) { do_erase(std::move(e)); }
+
+  protected:
+    virtual void do_erase(E) = 0;
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -34,15 +42,21 @@ template <class E, class C>
 class component_storage : public component_storage_base<E> {
   public:
     void insert(E e, C &&c) {
+#ifndef USE_ASSOC_VECTOR
         auto slot = m_data.size();
         auto [it, ok] = m_index.insert({e, slot});
         if (ok) {
             m_back_index[slot] = std::move(e);
             m_data.emplace_back(std::move(c));
         }
+#else
+        m_data.insert(std::move(e), std::move(c));
+#endif
     }
 
-    void erase(E e) final {
+  private:
+    void do_erase(E e) final {
+#ifndef USE_ASSOC_VECTOR
         auto it = m_index.find(e);
         if (it == end(m_index)) {
             return;
@@ -58,17 +72,31 @@ class component_storage : public component_storage_base<E> {
         }
 
         m_data.erase(m_data.begin() + slot);
+#else
+        m_data.erase(std::move(e));
+#endif
     }
 
   public:
-    constexpr C &operator[](E e) & { return m_data[m_index[e]]; }
+#ifndef USE_ASSOC_VECTOR
+    constexpr C &get(E e) & { return m_data[m_index[e]]; }
+    constexpr const C &get(E e) const & { return m_data[m_index[e]]; }
+#else
+    constexpr C &get(E e) & { return m_data[e]; }
+    constexpr const C &get(E e) const & { return m_data[e]; }
+#endif
 
-    constexpr const C &operator[](E e) const & { return m_data[m_index[e]]; }
+    constexpr C &operator[](E e) & { return get(e); }
+    constexpr const C &operator[](E e) const & { return get(e); }
 
   private:
+#ifndef USE_ASSOC_VECTOR
     std::map<E, std::size_t> m_index;
     std::unordered_map<std::size_t, E> m_back_index;
     std::vector<C> m_data;
+#else
+    assoc_vector<E, C> m_data;
+#endif
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

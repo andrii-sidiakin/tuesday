@@ -1,3 +1,5 @@
+tue_require_doctest()
+tue_require_nanobench()
 
 function(tue_add_simple_test NAME)
     cmake_parse_arguments(a "" "GROUP" "SOURCES;LIBRARIES" ${ARGN})
@@ -21,7 +23,7 @@ function(tue_add_simple_test NAME)
     endif()
 
     if(NOT DEFINED a_LIBRARIES)
-        set(a_LIBRARIES Tuesday::tuesday)
+        set(a_LIBRARIES Tuesday::tuesday Tuesday::nanobench Tuesday::doctest)
     endif()
 
     add_executable(${t_target} ${a_SOURCES})

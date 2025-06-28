@@ -50,7 +50,9 @@ endif
 do_configure:
 	@echo "Running configuration [${CFG_BUILD_NAME}]"
 	cmake -G ${CFG_GENERATOR} -B ${BUILD_ROOT_DIR}/${CFG_BUILD_NAME} -S ${SOURCE_ROOT_DIR} \
+		-D FETCHCONTENT_BASE_DIR="${BUILD_ROOT_DIR}/extern-deps/" \
 		-D CMAKE_EXPORT_COMPILE_COMMANDS=YES \
+		-D CMAKE_COLOR_DIAGNOSTICS=YES \
 		-D CMAKE_BUILD_TYPE=${CFG_BUILD_TYPE}
 	@# remove the 'last' symlink if any, and ensure there is no real dir named 'last'
 	$(shell test -L ${BUILD_LAST_DIR} && rm -f ${BUILD_LAST_DIR})

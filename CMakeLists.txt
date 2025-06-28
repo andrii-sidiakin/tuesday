@@ -8,6 +8,9 @@ option(TUE_BUILD_EXAMPLES "Build examples" YES)
 
 ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(tue_utils)
+
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -29,6 +32,18 @@ target_compile_options(tuesday INTERFACE
 
 target_include_directories(tuesday INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+)
+
+target_compile_definitions(tuesday INTERFACE
+    #TUE_ASSERT_NOOP
+)
+
+target_compile_definitions(tuesday INTERFACE
+    _GLIBCXX_DEBUG
+    _GLIBCXX_DEBUG_BACKTRACE
+)
+target_link_libraries(tuesday INTERFACE
+    stdc++exp
 )
 
 ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -22,46 +22,6 @@ class assoc_vector_iterator {
     struct kv_refs {
         KeyRef first;
         ValueRef second;
-
-        // using _pair_t = std::pair<std::remove_cvref_t<KeyRef>,
-        //                           std::remove_cvref_t<ValueRef>>;
-        //
-        // using _ref_pair_t = std::pair<std::remove_cvref_t<KeyRef> &,
-        //                               std::remove_cvref_t<ValueRef> &>;
-        //
-        // using _const_ref_pair_t =
-        //     std::pair<std::remove_cvref_t<KeyRef> const &,
-        //               std::remove_cvref_t<ValueRef> const &>;
-        //
-        // pair_of_key_val_refs() = delete;
-        //
-        // constexpr pair_of_key_val_refs(KeyRef kr, ValueRef vr) noexcept
-        //     : first{kr}, second{vr} {}
-        //
-        // constexpr pair_of_key_val_refs(const pair_of_key_val_refs &p)
-        // noexcept
-        //     : first{p.first}, second{p.second} {}
-        //
-        // constexpr pair_of_key_val_refs(pair_of_key_val_refs &&p) noexcept
-        //     : first{p.first}, second{p.second} {}
-        //
-        // const pair_of_key_val_refs &
-        // operator=(const pair_of_key_val_refs &p) const noexcept {
-        //     first = p.first;
-        //     second = p.second;
-        //     return *this;
-        // }
-        //
-        // const pair_of_key_val_refs &
-        // operator=(pair_of_key_val_refs &&p) const noexcept {
-        //     first = p.first;
-        //     second = p.second;
-        //     return *this;
-        // }
-        //
-        // operator _pair_t() const { return {first, second}; }
-        // operator _ref_pair_t() const { return {first, second}; }
-        // operator _const_ref_pair_t() const { return {first, second}; }
     };
 
   public:
@@ -100,6 +60,8 @@ class assoc_vector_iterator {
     KeyIter m_key_it;
 };
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 ///
 ///
 template <class Key, class Value> class assoc_vector {
@@ -109,6 +71,7 @@ template <class Key, class Value> class assoc_vector {
     using mapped_type = Value;
 
     using key_container = std::pmr::vector<key_type>;
+    using value_container = std::pmr::vector<value_type>;
 
     using iterator =
         assoc_vector_iterator<const key_type &, mapped_type &, assoc_vector,
@@ -121,14 +84,24 @@ template <class Key, class Value> class assoc_vector {
   private:
     using index_type = std::pmr::vector<Value>::size_type;
 
+    static constexpr index_type invalid_index{static_cast<index_type>(-1)};
+
     struct kr_pair {
-        index_type ki{}; // pos in keys
-        index_type ri{}; // ref index
+        index_type ki{invalid_index}; // pos in keys
+        index_type ri{invalid_index}; // ref index
+
+        constexpr explicit operator bool() const noexcept {
+            return ki != invalid_index && ri != invalid_index;
+        }
     };
 
     struct vc_pair {
-        index_type vi{}; // pos in values
-        index_type rc{}; // reference count
+        index_type vi{invalid_index}; // pos in values
+        index_type rc{0};             // reference count
+
+        constexpr explicit operator bool() const noexcept {
+            return vi != invalid_index;
+        }
     };
 
   public:
@@ -156,40 +129,63 @@ template <class Key, class Value> class assoc_vector {
     auto end() const noexcept { return const_iterator{*this, m_keys.end()}; }
 
   public:
-    template <std::same_as<key_type> K, std::same_as<mapped_type> V>
-    auto insert(K &&k, V &&v) {
-        auto [ki, ri] = insert_kv(std::forward<K>(k), std::forward<V>(v));
-        auto [ii, ok] = m_index.insert({m_keys[ki], kr_pair{ki, ri}});
-        tue_assert(ok, "key already exists");
-        return kr_pair{ki, ri};
+    template <std::same_as<key_type> K, typename V>
+        requires(std::constructible_from<mapped_type, V>)
+    kr_pair insert(K &&k, V &&v) {
+        auto [ii, ok] = m_index.insert({std::forward<K>(k), {}});
+        if (!ok) {
+            return {};
+        }
+        try {
+            auto kr = insert_kv(ii->first, std::forward<V>(v));
+            ii->second = kr;
+            return kr;
+        }
+        catch (...) {
+            m_index.erase(ii);
+            throw;
+        }
+        return {};
     }
 
-    template <std::same_as<key_type> K> auto insert(K &&k, kr_pair p) {
-        auto ref_it = m_refs.find(p.ri);
+    template <std::same_as<key_type> K> kr_pair insert(K &&k, kr_pair kr) {
+        auto ref_it = m_refs.find(kr.ri);
         if (ref_it == m_refs.end()) {
             throw std::out_of_range("unknown value reference");
         }
 
-        index_type ki = m_keys.size();
-        m_keys.emplace_back(std::forward<K>(k));
-
-        auto [ii, ok] = m_index.insert({m_keys[ki], kr_pair{ki, p.ri}});
-        if (not tue_assert(ok, "key already exists")) {
-            m_keys.pop_back();
-            throw std::logic_error("key already exists"); // TODO
+        auto [ii, ok] = m_index.insert({std::forward<K>(k), kr_pair{}});
+        if (!ok) {
+            return {};
         }
-
-        ref_it->second.rc += 1;
-
-        return kr_pair{ki, p.ri};
+        try {
+            index_type ki = m_keys.size();
+            m_keys.emplace_back(ii->first);
+            ii->second = kr_pair{ki, kr.ri};
+            ref_it->second.rc += 1;
+            return kr_pair{ki, kr.ri};
+        }
+        catch (...) {
+            m_index.erase(ii);
+            throw;
+        }
+        return {};
     }
 
-    auto erase(const key_type &k) {
+    void erase(const key_type &k) {
         auto it = m_index.find(k);
         if (it != m_index.end()) {
             erase_kv(it->second);
             m_index.erase(it);
         }
+    }
+
+    auto erase(const_iterator iter) { erase(iter->first); }
+
+    auto erase(kr_pair kr) {
+        tue_assert(kr, "invalid reference");
+        tue_assert(kr.ki < m_keys.size(), "invalid reference");
+        return erase(m_keys[kr.ki]);
     }
 
   public:
@@ -207,7 +203,9 @@ template <class Key, class Value> class assoc_vector {
         return m_refs.at(m_index.at(k).ri).vi;
     }
 
-    template <std::same_as<mapped_type> V> auto insert_kv(key_type k, V &&v) {
+    template <typename V> auto insert_kv(key_type k, V &&v) {
+        static_assert(std::constructible_from<mapped_type, V>);
+
         index_type ki = m_keys.size();
         index_type ri = m_vals.size();
         index_type vi = ri;

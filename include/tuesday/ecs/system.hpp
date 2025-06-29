@@ -75,7 +75,7 @@ template <class Entity, class Kind> class system_registry {
   public:
     constexpr system_type *find(mp::meta_index_t index) const noexcept {
         auto it = m_index.find(index);
-        return it == end(m_index) ? nullptr : m_data[it->second].get();
+        return it == end(m_index) ? nullptr : m_data[it->second].ptr.get();
     }
 
     template <std::derived_from<system_type> S>
@@ -101,7 +101,12 @@ template <class Entity, class Kind> class system_registry {
         if (auto *s = find<S>()) {
             return *s;
         }
-        return make<S>();
+        if constexpr (std::is_default_constructible_v<S>) {
+            return make<S>();
+        }
+        else {
+            throw std::logic_error("system not exists");
+        }
     }
 
   public:

@@ -52,7 +52,8 @@ struct Position : Vector<Position, float, 3> {};
 struct Velocity : Vector<Velocity, float, 3> {};
 struct AAExtent : Vector<AAExtent, float, 3> {};
 
-using ComponentSet = tue::mp::tseq<Mass, Position, Velocity, AAExtent>;
+using AllComponents =
+    tue::mp::tseq<Mass, Position, Velocity, AAExtent>;
 
 struct Entity {
     std::uint32_t id{0};
@@ -81,9 +82,9 @@ template <> struct std::hash<Entity> {
 #endif
 
 struct EntityTraits {
-    using bitset_type = std::bitset<ComponentSet::size()>;
+    using bitset_type = std::bitset<AllComponents::size()>;
 
-    static constexpr auto index = ComponentSet::make_index();
+    static constexpr auto index = AllComponents::make_index();
 
     constexpr void set(tue::mp::meta_index_t mt) {
         const auto *const iter = std::ranges::find(index, mt);

@@ -74,7 +74,7 @@ struct particle_system {
         delete_shader(shader);
     }
 
-    void init([[maybe_unused]] tue::gfx::render_context &ctx) {
+    void init([[maybe_unused]] render_context &ctx) {
         data.reset(part_count);
 
         for (size_t i{0}; i < part_count; ++i) {
@@ -106,7 +106,7 @@ struct particle_system {
         shader = tue::gfx::make_shader(vert_source_inst, frag_source);
     }
 
-    void draw(tue::gfx::render_context &ctx) {
+    void draw(render_context &ctx) {
         ctx.use(shader);
         ctx.use(vao);
 
@@ -140,11 +140,11 @@ struct particle_system {
         }
     }
 
-    friend void tue_init(tue::gfx::render_context &ctx, particle_system &o) {
+    friend void tue_init(render_context &ctx, particle_system &o) {
         o.init(ctx);
     }
 
-    friend void tue_draw(tue::gfx::render_context &ctx, particle_system &o) {
+    friend void tue_draw(render_context &ctx, particle_system &o) {
         o.draw(ctx);
     }
 

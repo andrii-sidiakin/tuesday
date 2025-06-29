@@ -49,8 +49,8 @@ class window_client : public tue::wsi::window_client {
 
 class window_system_client : public tue::wsi::window_system_client {
   public:
-    window_system_client() { glfwInit(); }
-    ~window_system_client() { glfwTerminate(); }
+    window_system_client();
+    ~window_system_client();
 
     std::unique_ptr<tue::wsi::window_client> make_window_client() override {
         return std::make_unique<window_client>(*this);

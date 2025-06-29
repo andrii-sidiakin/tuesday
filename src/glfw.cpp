@@ -136,9 +136,16 @@ static void cb_key(GLFWwindow *h, int key, int scancode, int action, int mods);
 static void cb_mouse(GLFWwindow *h, int key, int action, int mods);
 static void cb_cursor(GLFWwindow *h, double x, double y);
 
-static void destroy_handle(GLFWwindow *h);
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+window_system_client::window_system_client() {
+    glfwSetErrorCallback(cb_error);
+    glfwInit();
+}
+
+window_system_client::~window_system_client() {
+    glfwTerminate();
+}
 
 void window_system_client::create_handle(window_client &wc) {
     auto *ctx = wc.context();
@@ -199,7 +206,8 @@ static void cb_fbsize(GLFWwindow *h, int width, int height) {
     }
 }
 
-static void cb_key(GLFWwindow *h, int key, int scancode, int action, int mods) {
+static void cb_key(GLFWwindow *h, int key, [[maybe_unused]] int scancode,
+                   int action, int mods) {
     if (auto *ctx = find_client_context(h)) {
         ctx->on_event(tue::wsi::keyboard_event{
             .code = key_code_from_glfw(key),

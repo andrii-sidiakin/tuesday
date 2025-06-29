@@ -35,16 +35,15 @@ target_include_directories(tuesday INTERFACE
 )
 
 target_compile_definitions(tuesday INTERFACE
-    #TUE_ASSERT_NOOP
+    $<$<NOT:$<CONFIG:Debug>>:TUE_ASSERT_NOOP>
 )
 
 target_compile_definitions(tuesday INTERFACE
-    _GLIBCXX_DEBUG
-    _GLIBCXX_DEBUG_BACKTRACE
-)
+    $<$<CONFIG:Debug>:_GLIBCXX_DEBUG _GLIBCXX_DEBUG_BACKTRACE>
+ )
 target_link_libraries(tuesday INTERFACE
-    stdc++exp
-)
+     $<$<CONFIG:Debug>:stdc++exp>
+ )
 
 ## - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

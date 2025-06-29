@@ -41,6 +41,9 @@ template <class E> class component_storage_base {
 template <class E, class C>
 class component_storage : public component_storage_base<E> {
   public:
+    constexpr auto size() const noexcept { return m_data.values().size(); }
+    constexpr auto data() const noexcept { return m_data.values().data(); }
+
     void insert(E e, C &&c) {
 #ifndef USE_ASSOC_VECTOR
         auto slot = m_data.size();

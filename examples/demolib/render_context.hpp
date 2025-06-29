@@ -2,7 +2,15 @@
 
 #include "helpers.hpp"
 
-namespace tue::gfx {
+struct camera {
+    glm::vec3 pos{0, 0, -1};
+    glm::vec3 at{0};
+    glm::vec3 up{0, 1, 0};
+
+    float fov{60.};
+    float near{0.1};
+    float far{1000};
+};
 
 struct render_context {
     float width{0};
@@ -53,5 +61,3 @@ struct render_context {
         glDrawArrays(mode, 0, vbo.count);
     }
 };
-
-} // namespace tue::gfx

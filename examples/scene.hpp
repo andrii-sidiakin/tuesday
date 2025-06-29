@@ -1,6 +1,6 @@
 #pragma once
 
-#include "render_context.hpp"
+#include "demolib/render_context.hpp"
 
 #include <type_traits>
 
@@ -8,16 +8,12 @@
 
 struct drawable {
     virtual ~drawable() = default;
-    virtual void init(tue::gfx::render_context &) = 0;
-    virtual void draw(tue::gfx::render_context &) = 0;
+    virtual void init(render_context &) = 0;
+    virtual void draw(render_context &) = 0;
     virtual void update([[maybe_unused]] float dt) {}
 
-    friend void tue_init(tue::gfx::render_context &c, drawable &o) {
-        o.init(c);
-    }
-    friend void tue_draw(tue::gfx::render_context &c, drawable &o) {
-        o.draw(c);
-    }
+    friend void tue_init(render_context &c, drawable &o) { o.init(c); }
+    friend void tue_draw(render_context &c, drawable &o) { o.draw(c); }
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -48,8 +44,8 @@ struct collidable {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 struct drawable_noop : drawable {
-    void init(tue::gfx::render_context & /*unused*/) noexcept final {}
-    void draw(tue::gfx::render_context & /*unused*/) noexcept final {}
+    void init(render_context & /*unused*/) noexcept final {}
+    void draw(render_context & /*unused*/) noexcept final {}
 };
 
 struct syncable_noop : syncable {
@@ -90,12 +86,8 @@ class scene_object {
         model_impl(model_impl &&) noexcept = default;
         model_impl &operator=(model_impl &&) noexcept = default;
 
-        void init(tue::gfx::render_context &ctx) override {
-            tue::gfx::init(ctx, data);
-        }
-        void draw(tue::gfx::render_context &ctx) override {
-            tue::gfx::draw(ctx, data);
-        }
+        void init(render_context &ctx) override { tue::gfx::init(ctx, data); }
+        void draw(render_context &ctx) override { tue::gfx::draw(ctx, data); }
 
         void init(sync_context &ctx) override { tue::gfx::init(ctx, data); }
         void sync(sync_context &ctx) override { tue::gfx::sync(ctx, data); }
@@ -109,10 +101,10 @@ class scene_object {
         model_impl(model_impl &&) noexcept = default;
         model_impl &operator=(model_impl &&) noexcept = default;
 
-        void init(tue::gfx::render_context &ctx) override {
+        void init(render_context &ctx) override {
             tue::gfx::init(ctx, data_ref);
         }
-        void draw(tue::gfx::render_context &ctx) override {
+        void draw(render_context &ctx) override {
             tue::gfx::draw(ctx, data_ref);
         }
 
@@ -125,12 +117,12 @@ class scene_object {
     explicit scene_object(T &&obj)
         : m_model{std::make_unique<model_impl<T>>(std::forward<T>(obj))} {}
 
-    void init(tue::gfx::render_context &ctx) {
+    void init(render_context &ctx) {
         if (m_model) {
             m_model->init(ctx);
         }
     }
-    void draw(tue::gfx::render_context &ctx) {
+    void draw(render_context &ctx) {
         if (m_model) {
             m_model->draw(ctx);
         }
@@ -191,7 +183,7 @@ class scene_root {
     }
 
   private:
-    tue::gfx::render_context m_draw_ctx;
+    render_context m_draw_ctx;
     sync_context m_sync_ctx;
     std::vector<scene_object> m_objs;
 };
@@ -202,16 +194,14 @@ struct clear_scene {
     GLfloat clear_color[4] = {0, 0, 0.1, 1};
     GLbitfield clear_bits = {GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT};
 
-    friend constexpr void
-    tue_init([[maybe_unused]] tue::gfx::render_context &ctx,
-             clear_scene o) noexcept {
+    friend constexpr void tue_init([[maybe_unused]] render_context &ctx,
+                                   clear_scene o) noexcept {
         glClearColor(o.clear_color[0], o.clear_color[1], o.clear_color[2],
                      o.clear_color[3]);
     }
 
-    friend constexpr void
-    tue_draw([[maybe_unused]] tue::gfx::render_context &ctx,
-             clear_scene o) noexcept {
+    friend constexpr void tue_draw([[maybe_unused]] render_context &ctx,
+                                   clear_scene o) noexcept {
         glClear(o.clear_bits);
     }
 
@@ -224,42 +214,32 @@ struct clear_scene {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-struct camera {
-    glm::vec3 pos{0, 0, -1};
-    glm::vec3 at{0};
-    glm::vec3 up{0, 1, 0};
+constexpr void tue_init([[maybe_unused]] render_context &ctx,
+                        camera &o) noexcept {
+    o.pos = glm::vec3{0, 3, -10};
+    o.at = glm::vec3{0, 0, 1};
+    o.up = glm::vec3{0, 1, 0};
 
-    float fov{60.};
-    float near{0.1};
-    float far{1000};
+    o.near = 0.1;
+    o.far = 1000;
+}
 
-    friend constexpr void
-    tue_init([[maybe_unused]] tue::gfx::render_context &ctx,
-             camera &o) noexcept {
-        o.pos = glm::vec3{0, 3, -10};
-        o.at = glm::vec3{0, 0, 1};
-        o.up = glm::vec3{0, 1, 0};
-
-        o.near = 0.1;
-        o.far = 1000;
+constexpr void tue_draw(render_context &ctx, camera &o) noexcept {
+    if (!tue_assert(ctx.aspect_ratio > 0)) {
+        return;
     }
 
-    friend constexpr void tue_draw(tue::gfx::render_context &ctx,
-                                   camera &o) noexcept {
-        if (!tue_assert(ctx.aspect_ratio > 0)) {
-            return;
-        }
+    float ar = ctx.width / ctx.height;
+    ctx.mat_p = glm::perspective(glm::radians(o.fov), ar, o.near, o.far);
+    ctx.mat_v = glm::lookAt(o.pos, o.at, o.up);
+}
 
-        float ar = ctx.width / ctx.height;
-        ctx.mat_p = glm::perspective(glm::radians(o.fov), ar, o.near, o.far);
-        ctx.mat_v = glm::lookAt(o.pos, o.at, o.up);
-    }
+constexpr void tue_init([[maybe_unused]] sync_context &ctx,
+                        [[maybe_unused]] camera &o) noexcept {
+}
 
-    friend constexpr void tue_init([[maybe_unused]] sync_context &ctx,
-                                   [[maybe_unused]] camera &o) noexcept {}
-
-    friend constexpr void tue_sync([[maybe_unused]] sync_context &ctx,
-                                   [[maybe_unused]] camera &o) noexcept {}
-};
+constexpr void tue_sync([[maybe_unused]] sync_context &ctx,
+                        [[maybe_unused]] camera &o) noexcept {
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

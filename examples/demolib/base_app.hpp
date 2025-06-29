@@ -19,7 +19,7 @@ struct frame_stat_data {
                                          : 0.};
     }
 
-    constexpr auto fps() const noexcept { return 1.f / frame_avg().count(); }
+    constexpr auto fps() const noexcept { return 1. / frame_avg().count(); }
 };
 
 struct stat_data {
@@ -43,7 +43,7 @@ class base_app {
 
     virtual bool done() const;
     virtual void reset() {}
-    virtual void step(delta_time dt) {}
+    virtual void step([[maybe_unused]] delta_time dt) {}
     virtual void draw() {}
 
     virtual void resize(tue::wsi::window &w, tue::wsi::resize_event e);

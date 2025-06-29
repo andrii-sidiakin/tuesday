@@ -9,6 +9,6 @@ class base_scene {
     base_scene() = default;
 
     virtual void reset() {}
-    virtual void update(delta_time dt) {}
-    virtual void render(render_context &ctx) {}
+    virtual void update([[maybe_unused]] delta_time dt) {}
+    virtual void render([[maybe_unused]] render_context &ctx) {}
 };

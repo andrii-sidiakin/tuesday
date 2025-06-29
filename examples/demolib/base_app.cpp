@@ -55,6 +55,7 @@ void base_app::run() {
     std::println("GL v.{}", glver);
 
     do_reset();
+    resize(m_wnd, {.size = m_wnd.get_attrs().size});
 
     time_point t0 = clock_type::now();
     time_point ti = t0;

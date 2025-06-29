@@ -1,12 +1,15 @@
 #ifndef _TUE_ASSERT_HPP_INCLUDED_
 #define _TUE_ASSERT_HPP_INCLUDED_
 
+#ifdef TUE_ASSERT_NOOP
+
+#define tue_assert(cond, ...) [](bool b) { return b; }(static_cast<bool>(cond))
+
+#else
+
 #include <cstdio>
 #include <string>
 
-#ifdef TUE_ASSERT_NOOP
-#define tue_assert(...) (__VA_OPT__(__VA_ARGS__, ) true)
-#else
 #define tue_assert(cond, ...)                                                  \
     [](bool b, const char *func __VA_OPT__(, std::string &&msg)) {             \
         if (!b) [[unlikely]] {                                                 \
@@ -22,6 +25,7 @@
         return b;                                                              \
     }(static_cast<bool>(cond),                                                 \
       __PRETTY_FUNCTION__ __VA_OPT__(, std::string(__VA_ARGS__)))
+
 #endif
 
 #endif

@@ -52,8 +52,7 @@ struct Position : Vector<Position, float, 3> {};
 struct Velocity : Vector<Velocity, float, 3> {};
 struct AAExtent : Vector<AAExtent, float, 3> {};
 
-using AllComponents =
-    tue::mp::tseq<Mass, Position, Velocity, AAExtent>;
+using AllComponents = tue::mp::tseq<Mass, Position, Velocity, AAExtent>;
 
 struct Entity {
     std::uint32_t id{0};

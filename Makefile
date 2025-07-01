@@ -91,3 +91,15 @@ configure-clang-release:
 		CFG_BUILD_TYPE="Release" \
 		CFG_BUILD_NAME="clang-release" \
 
+.PHONY = coverage
+coverage: has-build-dir
+	mkdir -p ${BUILD_DIR}/coverage-report
+	# running lcov
+	lcov -c -d ${SOURCE_ROOT_DIR} -o ${BUILD_DIR}/coverage-report/report.info --rc branch_coverage=1 \
+        --no-external \
+        --ignore-errors=version \
+        --ignore-errors=empty \
+        --exclude "${BUILD_ROOT_DIR}/*" \
+	# generating HTML report
+	genhtml -o ${BUILD_DIR}/coverage-report/ ${BUILD_DIR}/coverage-report/report.info --rc branch_coverage=1 --dark-mode --flat
+

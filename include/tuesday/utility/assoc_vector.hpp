@@ -1,5 +1,5 @@
-#ifndef _TUE_ECS_ASSOC_VECTOR_HPP_INCLUDED_
-#define _TUE_ECS_ASSOC_VECTOR_HPP_INCLUDED_
+#ifndef _TUE_ASSOC_VECTOR_HPP_INCLUDED_
+#define _TUE_ASSOC_VECTOR_HPP_INCLUDED_
 
 #include <tuesday/assert.hpp>
 
@@ -67,11 +67,10 @@ class assoc_vector_iterator {
 template <class Key, class Value> class assoc_vector {
   public:
     using key_type = Key;
-    using value_type = std::pair<const Key, const Value &>;
     using mapped_type = Value;
+    using value_type = std::pair<const Key, Value>;
 
     using key_container = std::pmr::vector<key_type>;
-    using value_container = std::pmr::vector<value_type>;
 
     using iterator =
         assoc_vector_iterator<const key_type &, mapped_type &, assoc_vector,
@@ -129,58 +128,72 @@ template <class Key, class Value> class assoc_vector {
     auto end() const noexcept { return const_iterator{*this, m_keys.end()}; }
 
   public:
-    template <std::same_as<key_type> K, typename V>
-        requires(std::constructible_from<mapped_type, V>)
-    kr_pair insert(K &&k, V &&v) {
-        auto [ii, ok] = m_index.insert({std::forward<K>(k), {}});
-        if (!ok) {
-            return {};
-        }
-        try {
-            auto kr = insert_kv(ii->first, std::forward<V>(v));
-            ii->second = kr;
-            return kr;
-        }
-        catch (...) {
-            m_index.erase(ii);
-            throw;
-        }
-        return {};
+    ///
+    template <typename... As>
+        requires(std::constructible_from<mapped_type, As...>)
+    auto emplace(const key_type &k, As &&...as) {
+        std::pair<key_type, mapped_type> p{
+            std::piecewise_construct, std::forward_as_tuple(k),
+            std::forward_as_tuple(std::forward<As>(as)...)};
+        return emplace_impl(std::move(p.first), std::move(p.second));
     }
 
-    template <std::same_as<key_type> K> kr_pair insert(K &&k, kr_pair kr) {
-        auto ref_it = m_refs.find(kr.ri);
-        if (ref_it == m_refs.end()) {
-            throw std::out_of_range("unknown value reference");
-        }
-
-        auto [ii, ok] = m_index.insert({std::forward<K>(k), kr_pair{}});
-        if (!ok) {
-            return {};
-        }
-        try {
-            index_type ki = m_keys.size();
-            m_keys.emplace_back(ii->first);
-            ii->second = kr_pair{ki, kr.ri};
-            ref_it->second.rc += 1;
-            return kr_pair{ki, kr.ri};
-        }
-        catch (...) {
-            m_index.erase(ii);
-            throw;
-        }
-        return {};
+    ///
+    template <typename... As>
+        requires(std::constructible_from<mapped_type, As...>)
+    auto emplace(key_type &&k, As &&...as) {
+        std::pair<key_type, mapped_type> p{
+            std::piecewise_construct, std::forward_as_tuple(std::move(k)),
+            std::forward_as_tuple(std::forward<As>(as)...)};
+        return emplace_impl(std::move(p.first), std::move(p.second));
     }
 
-    void erase(const key_type &k) {
+    ///
+    template <typename M>
+        requires(std::constructible_from<mapped_type, M>)
+    auto insert(const key_type &k, M &&m) {
+        return emplace(k, mapped_type(std::forward<M>(m)));
+    }
+
+    ///
+    template <typename M>
+        requires(std::constructible_from<mapped_type, M>)
+    auto insert(key_type &&k, M &&m) {
+        return emplace(std::move(k), mapped_type(std::forward<M>(m)));
+    }
+
+    ///
+    auto insert_shared(const key_type &k, kr_pair kr) {
+        return insert_shared_impl(k, kr);
+    }
+
+    ///
+    auto insert_shared(key_type &&k, kr_pair kr) {
+        return insert_shared_impl(std::move(k), kr);
+    }
+
+    ///
+    auto insert_shared(const key_type &k, const key_type &src) {
+        return insert_shared(k, m_index.at(src));
+    }
+
+    ///
+    auto insert_shared(key_type &&k, const key_type &src) {
+        return insert_shared(std::move(k), m_index.at(src));
+    }
+
+    ///
+    bool erase(const key_type &k) {
         auto it = m_index.find(k);
         if (it != m_index.end()) {
             erase_kv(it->second);
             m_index.erase(it);
+            return true;
         }
+        return false;
     }
 
-    auto erase(const_iterator iter) { erase(iter->first); }
+    auto erase(const_iterator iter) { return erase(iter->first); }
 
     auto erase(kr_pair kr) {
         tue_assert(kr, "invalid reference");
@@ -201,6 +214,47 @@ template <class Key, class Value> class assoc_vector {
   private:
     constexpr index_type get_value_index(const key_type &k) const {
         return m_refs.at(m_index.at(k).ri).vi;
+    }
+
+    kr_pair emplace_impl(key_type k, mapped_type &&v) {
+        auto [ii, ok] = m_index.insert({std::move(k), {}});
+        if (!ok) {
+            return {};
+        }
+        try {
+            auto kr = insert_kv(ii->first, std::move(v));
+            ii->second = kr;
+            return kr;
+        }
+        catch (...) {
+            m_index.erase(ii);
+            throw;
+        }
+        return {};
+    }
+
+    kr_pair insert_shared_impl(key_type k, kr_pair kr) {
+        auto ref_it = m_refs.find(kr.ri);
+        if (ref_it == m_refs.end()) {
+            throw std::out_of_range("unknown value reference");
+        }
+
+        auto [ii, ok] = m_index.insert({std::move(k), kr_pair{}});
+        if (!ok) {
+            return {};
+        }
+        try {
+            index_type ki = m_keys.size();
+            m_keys.emplace_back(ii->first);
+            ii->second = kr_pair{ki, kr.ri};
+            ref_it->second.rc += 1;
+            return kr_pair{ki, kr.ri};
+        }
+        catch (...) {
+            m_index.erase(ii);
+            throw;
+        }
+        return {};
     }
 
     template <typename V> auto insert_kv(key_type k, V &&v) {

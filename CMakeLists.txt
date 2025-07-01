@@ -28,6 +28,12 @@ target_compile_features(tuesday INTERFACE
 
 target_compile_options(tuesday INTERFACE
     -Wall -Wpedantic -Wextra
+    $<$<CONFIG:Release>:-Werror>
+    $<$<BOOL:${TUE_BUILD_TESTS}>:--coverage>
+)
+
+target_link_options(tuesday INTERFACE
+    $<$<BOOL:${TUE_BUILD_TESTS}>:--coverage>
 )
 
 target_include_directories(tuesday INTERFACE

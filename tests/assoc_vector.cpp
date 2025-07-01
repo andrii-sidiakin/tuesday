@@ -2,7 +2,7 @@
 #include <doctest/doctest.h>
 
 #include <tuesday/assert.hpp>
-#include <tuesday/ecs/assoc_vector.hpp>
+#include <tuesday/utility/assoc_vector.hpp>
 
 #include <print>
 #include <string>
@@ -42,11 +42,18 @@ TEST_SUITE("assoc_vector") {
         CHECK_FALSE(vec.insert(1, std::string{"B"}));
     }
 
-    TEST_CASE("insert (resuse value)") {
+    TEST_CASE("emplace (multi-arg-value)") {
+        intstr_vec_t vec;
+        int k = 1;
+        CHECK(vec.emplace(k, 3, 'A'));
+        CHECK_EQ(vec[k], "AAA");
+    }
+
+    TEST_CASE("insert (shared value)") {
         intstr_vec_t vec;
         auto a1 = vec.insert(1, std::string{"A"});
         vec.insert(2, std::string{"B"});
-        vec.insert(3, a1);
+        vec.insert_shared(3, a1);
 
         CHECK_EQ(vec.size(), 3);
         CHECK_EQ(vec.values().size(), 2);

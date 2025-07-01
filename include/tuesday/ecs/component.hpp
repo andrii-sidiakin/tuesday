@@ -1,7 +1,7 @@
 #ifndef _TUE_ECS_COMPONENT_HPP_INCLUDED_
 #define _TUE_ECS_COMPONENT_HPP_INCLUDED_
 
-#include <tuesday/ecs/assoc_vector.hpp>
+#include <tuesday/utility/assoc_vector.hpp>
 
 #include <tuesday/mp/tseq.hpp>
 #include <tuesday/mp/tseq_ops.hpp>

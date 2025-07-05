@@ -37,7 +37,7 @@ class demo_app : public base_app {
         m_scene->render(m_context);
     }
 
-    void resize(tue::wsi::window &w, tue::wsi::resize_event e) override {
+    void resize(tue::wsi::window & /*w*/, tue::wsi::resize_event e) override {
         m_context.set_viewport(e.size.width, e.size.width);
 
         float ar = m_context.width / m_context.height;

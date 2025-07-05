@@ -5,6 +5,22 @@
 
 namespace tue::mp {
 
+namespace details {
+
+template <class, typename = void> struct as_tseq;
+
+template <typename T> struct as_tseq<T, void> {
+    using type = tseq<T>;
+};
+
+template <typename... Ts> struct as_tseq<tseq<Ts...>> {
+    using type = tseq<Ts...>;
+};
+
+} // namespace details
+
+template <typename T> using as_tseq_t = details::as_tseq<T>::type;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // tuesday.mp.tseq.unique
 
@@ -31,10 +47,17 @@ struct unique_op {
     }
 };
 
+///
 inline constexpr unique_op unique{};
 
-template <typename... Ts> consteval bool is_unique(tseq<Ts...> ts) noexcept {
-    return std::same_as<tseq<Ts...>, decltype(unique(ts))>;
+///
+template <typename... Ts>
+using unique_result_t = decltype(unique(tseq<Ts...>{}));
+
+///
+template <typename... Ts>
+consteval bool is_unique(tseq<Ts...> /*ts*/) noexcept {
+    return std::same_as<tseq<Ts...>, unique_result_t<Ts...>>;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -43,24 +66,39 @@ template <typename... Ts> consteval bool is_unique(tseq<Ts...> ts) noexcept {
 /// concatenates given sequences into a single one preserving the order
 struct concat_op {
 
-    template <typename... As>
-    consteval auto operator()(tseq<As...> a) const noexcept {
-        return a;
-    }
-
-    template <typename... As, typename... Bs, typename... Cs>
-    consteval auto operator()(tseq<As...> a, tseq<Bs...> b,
-                              Cs... cs) const noexcept {
-        if constexpr (sizeof...(Cs) == 0) {
-            return tseq<As..., Bs...>{};
+    template <typename A, typename... Bs>
+    consteval auto operator()(A /*a*/, Bs... /*bs*/) const noexcept {
+        if constexpr (sizeof...(Bs)) {
+            return concat_op{}(as_tseq_t<A>{}, as_tseq_t<Bs>{}...);
         }
         else {
-            return concat_op{}(a, concat_op{}(b, cs...));
+            return as_tseq_t<A>{};
         }
+    }
+
+    template <typename... As, typename... Bs>
+    consteval auto operator()(tseq<As...> /*as*/, Bs... /*bs*/) const noexcept {
+        if constexpr (sizeof...(Bs)) {
+            return concat_op{}(tseq<As...>{}, concat_op{}(as_tseq_t<Bs>{}...));
+        }
+        else {
+            return tseq<As...>{};
+        }
+    }
+
+    template <typename... As, typename... Bs>
+    consteval auto operator()(tseq<As...> /*as*/,
+                              tseq<Bs...> /*bs*/) const noexcept {
+        return tseq<As..., Bs...>{};
     }
 };
 
+///
 inline constexpr concat_op concat{};
+
+///
+template <typename... Ts>
+using concat_result_t = decltype(concat(as_tseq_t<Ts>{}...));
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // tuesday.mp.tseq.join_unique
@@ -68,25 +106,32 @@ inline constexpr concat_op concat{};
 ///
 struct join_unique_op {
 
-    template <typename... As, typename... Bs>
-    consteval auto operator()(tseq<As...> a, Bs... bs) const noexcept {
-        return unique(concat(a, bs...));
+    template <typename... As>
+    consteval auto operator()(As... /*a*/) const noexcept {
+        return unique(concat(as_tseq_t<As>{}...));
     }
 };
 
+///
 inline constexpr join_unique_op join_unique{};
+
+///
+template <typename... Ts>
+using join_unique_result_t = decltype(join_unique(as_tseq_t<Ts>{}...));
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
 
+///
 template <typename... As, typename... Bs>
-consteval auto operator+(tseq<As...> a, tseq<Bs...> b) noexcept {
-    return concat(a, b);
+consteval auto operator+(tseq<As...> /*a*/, tseq<Bs...> /*b*/) noexcept {
+    return concat(tseq<As...>{}, tseq<Bs...>{});
 }
 
+///
 template <typename... As, typename... Bs>
-consteval auto operator|(tseq<As...> a, tseq<Bs...> b) noexcept {
-    return join_unique(a, b);
+consteval auto operator|(tseq<As...> /*a*/, tseq<Bs...> /*b*/) noexcept {
+    return join_unique(tseq<As...>{}, tseq<Bs...>{});
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

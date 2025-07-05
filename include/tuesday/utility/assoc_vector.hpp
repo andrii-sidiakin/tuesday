@@ -10,7 +10,7 @@
 namespace tue::ecs {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// tuesday.ecs.assoc_vector
+// tuesday.utility.assoc_vector
 
 ///
 ///

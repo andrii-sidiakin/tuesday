@@ -42,6 +42,9 @@ consteval auto test_tseq_join_unique() {
         mp::join_unique(mp::tseq<int>{}, mp::tseq<char>{}),
         mp::join_unique(mp::tseq<int, int>{}, mp::tseq<char, int>{}),
         mp::join_unique(mp::tseq<int, char>{}, mp::tseq<>{}),
+        mp::join_unique(int{}, int{}, char{}, int{}, char{}),
+        mp::join_unique(int{}, mp::tseq<char>{}, char{}),
+        mp::join_unique(int{}, mp::tseq<char, char>{}),
         mp::join_unique(mp::tseq<>{}, mp::tseq<int, char>{}, mp::tseq<>{}));
 }
 

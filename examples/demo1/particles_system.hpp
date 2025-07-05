@@ -154,7 +154,7 @@ struct CollisionSystem
 
     explicit CollisionSystem(EntityRegistry &reg) : m_reg(reg) {}
 
-    void update(float dt) {
+    void update([[maybe_unused]] float dt) {
         auto &xs = m_reg.use_component<Position>();
         auto &vs = m_reg.use_component<Velocity>();
 
